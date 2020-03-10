@@ -57,8 +57,8 @@ rm -rf %{_buildroot}
 
 %files
 %attr(0755, satreport, satreport)  /var/httpd/satellite6-reports
-%attr(0750, lxreport, lxreport) /opt/%{_name}/bin/satellite6-reports
-%attr(0750, lxreport, lxreport) /opt/%{_name}/lib/reports.rb
+%attr(0750, satreport, satreport) /opt/%{_name}/bin/satellite6-reports
+%attr(0750, satreport, satreport) /opt/%{_name}/lib/reports.rb
 /tmp/vendor/gems/*
 %config(noreplace) /etc/satellite6-reports.yaml
 

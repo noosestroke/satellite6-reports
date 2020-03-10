@@ -1,0 +1,88 @@
+# global variables
+%define _name                 satellite6-reports
+%define _version              0.1.0
+%define _release              1
+%define _gem_dir              %(ruby -rubygems -e 'puts Gem::default_path.grep\(%r{^\(?!#{ENV["HOME"]}\)}\).shift')
+%define _gem_install          gem install --force --no-ri --no-rdoc
+%define _gem_local_install    gem install --force --local
+
+# header section
+Name:           %{_name}
+Version:        %{_version}
+Release:        %{_release}%{?dist}
+BuildRoot:      %{_builddir}/%{name}-%{version}-%{release}-root
+Summary:        Satellite6 Reports
+Group:         
+License:        GPG
+URL:            https://github.com/noosestroke/satellite6-reports/
+Source0:        bin
+Source1:        lib
+Source2:        etc
+Source3:        vendor
+
+# dependencies
+%if 0%{?rhel} >= 7
+Requires: ruby ruby-devel gcc gcc-c++
+%else
+echo "This package requires dist. EL 7 or higher"
+exit 0
+%endif
+
+BuildArch:      noarch
+
+%description
+Host and Package reportsusing Satellite6 API
+
+%prep
+[[ -d %{_builddir} ]] && rm -rf %{_builddir}
+[[ ! -d %{_builddir} ]] && mkdir %{_builddir}
+
+%build
+
+%install
+rm -rf %{buildroot}
+mkdir -p %{buildroot}/opt/%{_name}
+mkdir -p %{buildroot}/var/httpd/satellite6-reports/
+mkdir -p %{buildroot}/tmp/vendor/gems
+cd %{buildroot}/opt/%{_name}
+cp -rp %SOURCE0 .
+cp -rp %SOURCE1 .
+cd %{buildroot}
+cp -rp %SOURCE2 .
+cp -rp %{SOURCE3}/cache/* ./tmp/vendor/gems
+
+%clean
+rm -rf %{buildroot}
+rm -rf %{_buildroot}
+
+%files
+%attr(0755, satreport, satreport)  /var/httpd/satellite6-reports
+%attr(0750, lxreport, lxreport) /opt/%{_name}/bin/satellite6-reports
+%attr(0750, lxreport, lxreport) /opt/%{_name}/lib/reports.rb
+/tmp/vendor/gems/*
+%config(noreplace) /etc/satellite6-reports.yaml
+
+%post
+if [ $1 -gt 0 ] ; then
+%{_gem_local_install} /tmp/vendor/gems/unf_ext-*.gem
+%{_gem_local_install} /tmp/vendor/gems/unf-*.gem
+%{_gem_local_install} /tmp/vendor/gems/rest-client-*.gem
+%{_gem_local_install} /tmp/vendor/gems/oauth-*.gem
+%{_gem_local_install} /tmp/vendor/gems/netrc-*.gem
+%{_gem_local_install} /tmp/vendor/gems/mime-types-data-*.gem
+%{_gem_local_install} /tmp/vendor/gems/mime-types-*.gem
+%{_gem_local_install} /tmp/vendor/gems/json-*.gem
+%{_gem_local_install} /tmp/vendor/gems/http-cookie-*.gem
+%{_gem_local_install} /tmp/vendor/gems/highline-*.gem
+%{_gem_local_install} /tmp/vendor/gems/domain_name-*.gem
+%{_gem_local_install} /tmp/vendor/gems/apipie-bindings-*.gem
+fi
+
+
+%verifyscript
+RESULT=0
+exit $RESULT
+
+%changelog
+* Thu Mar 10 2020 noosestroke 0.1.0-1
+- initial

@@ -21,7 +21,7 @@ require 'uri'
 require 'json'
 require 'time'
 require 'pp'
-require 'lxreport'
+require 'reports'
 require 'syslog/logger'
 
 @options = {

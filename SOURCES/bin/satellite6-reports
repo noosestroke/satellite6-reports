@@ -1,0 +1,107 @@
+/usr/bin/ruby
+#
+# Provides Host and Package reports from Satellite6 server
+# usefull for subsription usage calculation.
+#
+# Author: Noosestroke <noosestroke@gmail.com>
+#
+# Example: jb_lxreport packages 
+#
+#
+lib = File.expand_path('../../lib', __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+require 'rubygems'
+require 'optparse'
+require 'yaml'
+require 'json'
+require 'apipie-bindings'
+require 'net/http'
+require 'uri'
+require 'json'
+require 'time'
+require 'pp'
+require 'lxreport'
+require 'syslog/logger'
+
+@options = {
+  :lxr_conf => "/etc/satellite6-reports.yaml",
+}
+
+optparse = OptionParser.new do |opts|
+  opts.banner = "Usage: #{opts.program_name} ACTION [options]"
+  opts.banner = "ACTION can be any of [hosts,packages]"
+  opts.separator ""
+  opts.on("-x", "--sat-uri=URI", "URI to the Satellite6") do |x|
+    @options[:sat_uri] = x
+  end
+  opts.on("-t", "--timeout=TIMEOUT", OptionParser::DecimalInteger, "Timeout value in seconds for any API calls. -1 means never timeout") do |t|
+    @options[:timeout] = t
+  end
+  opts.on("-u", "--user=USER", "User to log in to Satellite6") do |u|
+    @options[:sat_user] = u
+  end
+  opts.on("-p", "--pass=PASS", "Password to log in to Satellite6") do |p|
+    @options[:sat_pass] = p
+  end
+  opts.on("-c", "--config=FILE", "configuration in YAML format") do |c|
+    @options[:lxr_conf] = c
+  end
+  opts.on("--verbose", "Get verbose logs from patchinfo") do
+    @options[:verbose] = true
+  end
+  opts.on("--no-verify-ssl", "don't verify SSL certs") do
+    @options[:verify_ssl] = false
+  end
+end
+optparse.parse!
+
+if ARGV.empty?
+  puts optparse.help
+  exit
+end
+
+@conffile = YAML.load_file(@options[:lxr_conf])
+
+if @conffile.has_key?(:settings) and @conffile[:settings].is_a?(Hash)
+  @conffile[:settings].each do |key,val|
+    if not @options.has_key?(key)
+      @options[key] = val
+    end
+  end
+end
+
+if not @options[:sat_user]
+  @options[:user] = ask('Satellite6 username: ')
+end
+
+if not @options[:sat_pass]
+  @options[:pass] = ask('Satellite6 password: ') { |q| q.echo = false }
+end
+
+### logger settup
+@logger = Logger.new(STDOUT)
+@logger.datetime_format = "%Y-%m-%d %H:%M:%S"
+if @options[:verbose]
+  @logger.level = Logger::DEBUG
+else
+  @logger.level = Logger::INFO
+end
+# log formatter
+@logger.formatter = proc do |datetime, severity, progname, msg|
+     "#{Time.now}, #{severity}: #{msg}\n"
+end
+
+# Satellite API
+@sat_api = ApipieBindings::API.new({:uri => @options[:sat_uri], :username => @options[:sat_user], :password => @options[:sat_pass], :api_version => '2', :timeout => @options[:timeout]}, {:verify_ssl => @options[:verify_ssl]})
+org = (@sat_api.resource(:organizations).call(:index, {:search => "org_name"}))['results'][0]['id']
+
+ARGV.each { |action| 
+  if action == 'hosts'
+    LxReport.get_hosts(@sat_api, @org, @options[:export_dir])
+  elsif action == 'packages'
+    LxReport.get_packages(@sat_api, @org, @options[:sat_uri], @options[:sat_user], @options[:sat_pass], @options[:export_dir])
+  else
+    @logger.error("Invalid action: #{action}, please use one of the following actions [hosts,packages]")
+  end
+}

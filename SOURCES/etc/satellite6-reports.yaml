@@ -1,0 +1,14 @@
+# satellite6-reports example config file
+#
+# This file is provided with package satellite6-reports
+# File is usually managed by Puppet.
+#
+# TEMPLATE /etc/satellite6-reports.yaml
+
+:settings:
+  :sat_uri: https://satellite6.domain.com
+  :timeout: 30
+  :verify_ssl: false
+  :sat_user: "CHANGE_ME"
+  :sat_pass: "SECRET"
+  :export_dir: /var/httpd/satellite6-reports/

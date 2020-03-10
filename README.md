@@ -1,4 +1,4 @@
-# satellite-reports
+# satellite6-reports
 
 Tools package to generate Linux host and package report from Satellite 6 API.
 
@@ -9,7 +9,6 @@ Some ruby gems are required for offline gem install. Use bundler to install \*.g
 ```
 cd SOURCES && bundle package
 ```
-
 
 ## Build package
 
